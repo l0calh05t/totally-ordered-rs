@@ -38,7 +38,7 @@ implement_float_order!(f64, u64, i64, 64);
 #[repr(transparent)]
 pub struct TotallyOrdered<F: TotallyOrderable>(pub F);
 
-impl<F: TotallyOrderable + Copy> TotallyOrdered<F> {
+impl<F: TotallyOrderable> TotallyOrdered<F> {
 	pub fn new(v: F) -> Self {
 		Self(v)
 	}
