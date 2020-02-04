@@ -163,7 +163,7 @@ mod test {
 			TotallyOrdered::new(-f32::NAN),
 			TotallyOrdered::new(f32::NAN)
 		);
-		assert_ne!(TotallyOrdered::new(-0.0), TotallyOrdered::new(0.0));
+		assert_ne!(TotallyOrdered::new(-0.0f32), TotallyOrdered::new(0.0f32));
 	}
 
 	#[test]
@@ -206,6 +206,6 @@ mod test {
 			TotallyOrdered::new(-f64::NAN),
 			TotallyOrdered::new(f64::NAN)
 		);
-		assert_ne!(TotallyOrdered::new(-0.0), TotallyOrdered::new(0.0));
+		assert_ne!(TotallyOrdered::new(-0.0f64), TotallyOrdered::new(0.0f64));
 	}
 }
