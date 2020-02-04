@@ -4,5 +4,9 @@ version = "0.1.0"
 authors = ["l0calh05t <l0calh05t@gmx.net>"]
 edition = "2018"
 license = "MIT"
+repository = "https://github.com/l0calh05t/totally-ordered-rs.git"
+description = "No dependency, no-std totally ordered f32/f64"
+keywords = ["f32", "f64", "ord", "eq", "hash", "sort"]
+categories = ["no-std", "rust-patterns"]
 
 [dependencies]
