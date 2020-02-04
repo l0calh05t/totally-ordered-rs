@@ -3,14 +3,24 @@
 use core::cmp::Ordering;
 use core::hash::{Hash, Hasher};
 
+/// Implement this for types that are not directly `Ord + Eq`, but
+/// can be at a slightly higher runtime cost. Implemented for `f32`
+/// and `f64`.
 pub trait TotallyOrderable {
+	/// A true equality comparison. Can be more expensive than standard
+	/// `PartialEq`.
 	fn total_eq(&self, other: &Self) -> bool;
+	/// A totally ordered comparison. Can be more expensive than standard
+	/// `PartialOrd`.
 	fn total_cmp(&self, other: &Self) -> Ordering;
+	/// A hashing function that matches `total_eq`. As the wrapped type
+	/// doesn't implement `Eq`, it can't be `Hash` directly.
 	fn total_hash<H: Hasher>(&self, state: &mut H);
 }
 
 macro_rules! implement_float_order {
 	($F:ident, $U:ident, $I:ident, $N:literal) => {
+		/// Implements the IEEE 754-2008 binary32/binary64 total ordering predicate.
 		impl TotallyOrderable for $F {
 			fn total_eq(&self, other: &Self) -> bool {
 				self.to_bits() == other.to_bits()
@@ -34,21 +44,30 @@ macro_rules! implement_float_order {
 implement_float_order!(f32, u32, i32, 32);
 implement_float_order!(f64, u64, i64, 64);
 
+/// An ABI-transparent newtype wrapper around types that
+/// adds Ord + Eq to TotallyOrderable types (f32 and f64).
 #[derive(Copy, Clone, Debug, Default)]
 #[repr(transparent)]
 pub struct TotallyOrdered<F: TotallyOrderable>(pub F);
 
 impl<F: TotallyOrderable> TotallyOrdered<F> {
+	/// Creates a wrapped value from an inner value
 	pub fn new(v: F) -> Self {
 		Self(v)
 	}
 
+	/// Creates a wrapped slice without copying data.
+	/// Not implemented as `From<&[F]> for &[Self]` as
+	/// slices are always foreign.
 	pub fn new_slice(s: &[F]) -> &[Self] {
 		use core::slice::from_raw_parts;
 		// TotallyOrdered is repr(transparent)
 		unsafe { from_raw_parts(s.as_ptr() as *const _, s.len()) }
 	}
 
+	/// Creates a mutable wrapped slice without copying data.
+	/// Not implemented as `From<&mut [F]> for &mut [Self]` as
+	/// slices are always foreign.
 	pub fn new_slice_mut(s: &mut [F]) -> &mut [Self] {
 		use core::slice::from_raw_parts_mut;
 		// TotallyOrdered is repr(transparent)
@@ -88,14 +107,14 @@ impl<F: TotallyOrderable> From<F> for TotallyOrdered<F> {
 	}
 }
 
-impl<F: TotallyOrderable> From<&F> for &TotallyOrdered<F> {
+impl<'a, F: TotallyOrderable> From<&'a F> for &'a TotallyOrdered<F> {
 	fn from(v: &F) -> Self {
 		// TotallyOrdered is repr(transparent)
 		unsafe { &*(v as *const _ as *const _) }
 	}
 }
 
-impl<F: TotallyOrderable> From<&mut F> for &mut TotallyOrdered<F> {
+impl<'a, F: TotallyOrderable> From<&'a mut F> for &'a mut TotallyOrdered<F> {
 	fn from(v: &mut F) -> Self {
 		// TotallyOrdered is repr(transparent)
 		unsafe { &mut *(v as *mut _ as *mut _) }
