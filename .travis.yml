@@ -1,0 +1,14 @@
+language: rust
+os:
+  - windows
+  - linux
+rust: stable
+cache: cargo
+before_script:
+  - rustup component add clippy
+  - rustup component add rustfmt
+script:
+  - cargo fmt -- --check --files-with-diff
+  - cargo build
+  - cargo test
+  - cargo clippy
