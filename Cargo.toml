@@ -1,6 +1,6 @@
 [package]
 name = "totally-ordered"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["l0calh05t <l0calh05t@gmx.net>"]
 edition = "2018"
 license = "MIT"

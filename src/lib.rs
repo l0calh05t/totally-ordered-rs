@@ -1,7 +1,7 @@
 //! This crate adds the `TotallyOrderable` trait for `f32` and `f64` values as well as the ABI-transparent `TotallyOrdered` type which adds `Ord + Eq + Hash` to wrapped floating point values.
 //! Main use case: sorting of floating-point arrays which may or may not contain not-a-numbers, infinities, and positive or negative zeros.
 //!
-//! ```rust
+//! ```
 //! use totally_ordered::TotallyOrdered;
 //! let mut values : [f64; 4] = [-0.0, 0.0, -1.0, 1.0];
 //! TotallyOrdered::new_slice_mut(&mut values).sort();
@@ -72,6 +72,15 @@ impl<F: TotallyOrderable> TotallyOrdered<F> {
 	/// Creates a wrapped slice without copying data.
 	/// Not implemented as `From<&[F]> for &[Self]` as
 	/// slices are always foreign.
+	///
+	/// Follows the usual borrowing rules:
+	/// ```compile_fail
+	/// # use totally_ordered::*;
+	/// let mut values = [1.0, 2.0, 3.0];
+	/// let values_to = TotallyOrdered::new_slice(&values);
+	/// values[2] = 4.0; // error, can't mutate while borrowed
+	/// assert_eq!(values_to[2], TotallyOrdered::new(3.0));
+	/// ```
 	pub fn new_slice(s: &[F]) -> &[Self] {
 		use core::slice::from_raw_parts;
 		// TotallyOrdered is repr(transparent)
@@ -81,6 +90,15 @@ impl<F: TotallyOrderable> TotallyOrdered<F> {
 	/// Creates a mutable wrapped slice without copying data.
 	/// Not implemented as `From<&mut [F]> for &mut [Self]` as
 	/// slices are always foreign.
+	///
+	/// Follows the usual borrowing rules:
+	/// ```compile_fail
+	/// # use totally_ordered::*;
+	/// let mut values = [3.0, 2.0, 1.0];
+	/// let values_to = TotallyOrdered::new_slice_mut(&mut values);
+	/// assert_eq!(values[2], 1.0); // error, can't borrow while mutably borrowed
+	/// values_to.sort();
+	/// ```
 	pub fn new_slice_mut(s: &mut [F]) -> &mut [Self] {
 		use core::slice::from_raw_parts_mut;
 		// TotallyOrdered is repr(transparent)
@@ -121,6 +139,23 @@ impl<F: TotallyOrderable> From<F> for TotallyOrdered<F> {
 }
 
 impl<'a, F: TotallyOrderable> From<&'a F> for &'a TotallyOrdered<F> {
+	/// The explicit lifetime bound ensures that both From
+	/// ```compile_fail
+	/// # use totally_ordered::*;
+	/// let mut value : f32 = 1.0;
+	/// let value_to : &TotallyOrdered<_> = From::from(&value);
+	/// value = 2.0; // error, can't mutate while borrowed
+	/// assert_eq!(*value_to, TotallyOrdered::new(1.0));
+	/// ```
+	/// and Into
+	/// ```compile_fail
+	/// # use totally_ordered::*;
+	/// let mut value : f32 = 1.0;
+	/// let value_to : &TotallyOrdered<_> = (&value).into();
+	/// value = 2.0; // error, can't mutate while borrowed
+	/// assert_eq!(*value_to, TotallyOrdered::new(1.0));
+	/// ```
+	/// respect the lifetime of the borrow on the original value.
 	fn from(v: &F) -> Self {
 		// TotallyOrdered is repr(transparent)
 		unsafe { &*(v as *const _ as *const _) }
@@ -128,6 +163,23 @@ impl<'a, F: TotallyOrderable> From<&'a F> for &'a TotallyOrdered<F> {
 }
 
 impl<'a, F: TotallyOrderable> From<&'a mut F> for &'a mut TotallyOrdered<F> {
+	/// The explicit lifetime bound ensures that both From
+	/// ```compile_fail
+	/// # use totally_ordered::*;
+	/// let mut value : f32 = 1.0;
+	/// let value_to : &mut TotallyOrdered<_> = From::from(&mut value);
+	/// assert_eq!(value, 1.0); // error, can't borrow while mutably borrowed
+	/// *value_to = TotallyOrdered::new(2.0);
+	/// ```
+	/// and Into
+	/// ```compile_fail
+	/// # use totally_ordered::*;
+	/// let mut value : f32 = 1.0;
+	/// let value_to : &mut TotallyOrdered<_> = (&mut value).into();
+	/// assert_eq!(value, 1.0); // error, can't borrow while mutably borrowed
+	/// *value_to = TotallyOrdered::new(2.0);
+	/// ```
+	/// respect the lifetime of the mutable borrow on the original value.
 	fn from(v: &mut F) -> Self {
 		// TotallyOrdered is repr(transparent)
 		unsafe { &mut *(v as *mut _ as *mut _) }
