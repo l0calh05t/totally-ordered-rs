@@ -11,7 +11,7 @@
 //! # assert_eq!(values[3], 1.0);
 //! ```
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use core::cmp::Ordering;
 use core::hash::{Hash, Hasher};
@@ -29,6 +29,66 @@ pub trait TotallyOrderable {
 	/// A hashing function that matches `total_eq`. As the wrapped type
 	/// doesn't implement `Eq`, it can't be `Hash` directly.
 	fn total_hash<H: Hasher>(&self, state: &mut H);
+
+	type TotalOrdKey: Ord + Hash + Sized;
+	fn total_ord_key(&self) -> Self::TotalOrdKey;
+}
+
+/// Implement this for types that are not directly `Ord + Eq`, but
+/// can be transformed *in place* in such a way that the associated
+/// type `Transformed` is. Implemented for `f32` and `f64`.
+pub trait InPlaceTotallyOrderable: TotallyOrderable + Sized {
+	/// Associated type that is `Ord`, must be the same size as
+	/// `Self`
+	type Transformed: Ord + Hash + Sized;
+	/// Transform `Self` into `Transformed` in place.
+	/// # Safety
+	/// The resulting value must no longer be treated as a
+	/// `Self`, but as a `Transformed`, until the inverse
+	/// transform `total_order_inverse_transform` is called.
+	/// `Transformed` shall only be used for comparisons,
+	/// hashing and swapping / moves.
+	unsafe fn total_order_transform(&mut self);
+	/// Apply the inverse transformation of
+	/// `total_order_transform`
+	/// # Safety
+	/// This function may only be called on values previously
+	/// transformed via `total_order_transform`.
+	unsafe fn total_order_inverse_transform(&mut self);
+}
+
+#[cfg(feature = "std")]
+/// (Potentially) faster alternative to `TotallyOrdered::new_slice_mut` followed by
+/// `sort` for values that can be transformed in place.
+///
+/// ```
+/// # use totally_ordered::*;
+/// let mut values = vec![3.0, 2.0, 1.0];
+/// total_sort(&mut values);
+/// # assert_eq!(values[0], 1.0);
+/// # assert_eq!(values[1], 2.0);
+/// # assert_eq!(values[2], 3.0);
+/// ```
+pub fn total_sort<E: InPlaceTotallyOrderable, T: AsMut<[E]>>(container: &mut T) {
+	fn total_sort_impl<E: InPlaceTotallyOrderable>(s: &mut [E]) {
+		for e in s.iter_mut() {
+			unsafe {
+				e.total_order_transform();
+			}
+		}
+		{
+			use core::slice::from_raw_parts_mut;
+			let st = unsafe { from_raw_parts_mut(s.as_ptr() as *mut E::Transformed, s.len()) };
+			// as the transformed values are totally orderable, unstable == stable!
+			st.sort_unstable();
+		}
+		for e in s.iter_mut() {
+			unsafe {
+				e.total_order_inverse_transform();
+			}
+		}
+	}
+	total_sort_impl(container.as_mut());
 }
 
 macro_rules! implement_float_order {
@@ -49,6 +109,27 @@ macro_rules! implement_float_order {
 
 			fn total_hash<H: Hasher>(&self, state: &mut H) {
 				self.to_bits().hash(state);
+			}
+
+			type TotalOrdKey = $I;
+			fn total_ord_key(&self) -> Self::TotalOrdKey {
+				let a = self.to_bits() as $I;
+				a ^ (((a >> ($N - 1)) as $U) >> 1) as $I
+			}
+		}
+
+		impl InPlaceTotallyOrderable for $F {
+			type Transformed = $I;
+
+			unsafe fn total_order_transform(&mut self) {
+				let mut bits = self.to_bits();
+				bits ^= ((((bits as $I) >> ($N - 1)) as $U) >> 1);
+				*self = $F::from_bits(bits);
+			}
+
+			unsafe fn total_order_inverse_transform(&mut self) {
+				// forward and inverse transforms are identical for f32/f64!
+				self.total_order_transform();
 			}
 		}
 	};

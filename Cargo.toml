@@ -10,3 +10,15 @@ keywords = ["f32", "f64", "ord", "eq", "hash"]
 categories = ["no-std", "rust-patterns"]
 
 [dependencies]
+
+[dev-dependencies]
+criterion = "0.3"
+rand = "0.8"
+
+[features]
+default = ["std"]
+std = []
+
+[[bench]]
+name = "benchmark"
+harness = false
