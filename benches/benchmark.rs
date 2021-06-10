@@ -27,53 +27,18 @@ where
 	(0..n).map(|_| rng.gen()).collect()
 }
 
-fn bench_sorts(c: &mut Criterion) {
-	let mut group = c.benchmark_group("Sort f32");
+fn bench_sorts<T>(c: &mut Criterion)
+where
+	T: PartialOrd + InPlaceTotallyOrderable + Clone,
+	rand::distributions::Standard: rand::distributions::Distribution<T>,
+{
+	let mut group = c.benchmark_group(format!("Sort {}", std::any::type_name::<T>()));
 	for p in 8..=24 {
 		if p % 8 != 0 {
 			continue;
 		}
 		let n = 1 << p;
-		let input = random_vec::<f32>(n);
-
-		group.bench_with_input(BenchmarkId::new("Partial", n), &input, |b, i| {
-			b.iter_batched_ref(
-				|| i.clone(),
-				|i| sort_partial(i),
-				criterion::BatchSize::LargeInput,
-			);
-		});
-		group.bench_with_input(BenchmarkId::new("Total", n), &input, |b, i| {
-			b.iter_batched_ref(
-				|| i.clone(),
-				|i| sort_slow(i),
-				criterion::BatchSize::LargeInput,
-			);
-		});
-		group.bench_with_input(BenchmarkId::new("Cached key", n), &input, |b, i| {
-			b.iter_batched_ref(
-				|| i.clone(),
-				|i| sort_cached(i),
-				criterion::BatchSize::LargeInput,
-			);
-		});
-		group.bench_with_input(BenchmarkId::new("In place key", n), &input, |b, i| {
-			b.iter_batched_ref(
-				|| i.clone(),
-				|i| sort_fast(i),
-				criterion::BatchSize::LargeInput,
-			);
-		});
-	}
-	group.finish();
-
-	let mut group = c.benchmark_group("Sort f64");
-	for p in 8..=24 {
-		if p % 8 != 0 {
-			continue;
-		}
-		let n = 1 << p;
-		let input = random_vec::<f64>(n);
+		let input = random_vec::<T>(n);
 
 		group.bench_with_input(BenchmarkId::new("Partial", n), &input, |b, i| {
 			b.iter_batched_ref(
@@ -107,5 +72,5 @@ fn bench_sorts(c: &mut Criterion) {
 	group.finish();
 }
 
-criterion_group!(benches, bench_sorts);
+criterion_group!(benches, bench_sorts::<f32>, bench_sorts::<f64>);
 criterion_main!(benches);
