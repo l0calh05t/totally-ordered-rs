@@ -123,7 +123,7 @@ macro_rules! implement_float_order {
 
 			unsafe fn total_order_transform(&mut self) {
 				let mut bits = self.to_bits();
-				bits ^= ((((bits as $I) >> ($N - 1)) as $U) >> 1);
+				bits ^= (((bits as $I) >> ($N - 1)) as $U) >> 1;
 				*self = $F::from_bits(bits);
 			}
 
