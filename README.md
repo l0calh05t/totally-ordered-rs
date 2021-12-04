@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/totally-ordered)](https://crates.io/crates/totally-ordered)
 [![docs.rs](https://docs.rs/totally-ordered/badge.svg)](https://docs.rs/totally-ordered)
-[![Build status](https://travis-ci.org/l0calh05t/totally-ordered-rs.svg?branch=master)](https://travis-ci.org/l0calh05t/totally-ordered-rs)
+[![Rust](https://github.com/l0calh05t/totally-ordered-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/l0calh05t/totally-ordered-rs/actions/workflows/rust.yml)
 
 This crate adds the `TotallyOrderable` trait for `f32` and `f64` values as well as the ABI-transparent `TotallyOrdered` type which adds `Ord + Eq + Hash` to wrapped floating point values.
 Main use case: sorting of floating-point arrays which may or may not contain not-a-numbers, infinities, and positive or negative zeros.
