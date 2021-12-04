@@ -3,22 +3,9 @@ name = "totally-ordered"
 version = "0.2.0"
 authors = ["l0calh05t <l0calh05t@gmx.net>"]
 edition = "2018"
+rust-version = "1.34.0"
 license = "MIT"
 repository = "https://github.com/l0calh05t/totally-ordered-rs.git"
 description = "No dependency, no-std totally ordered f32/f64"
 keywords = ["f32", "f64", "ord", "eq", "hash"]
 categories = ["no-std", "rust-patterns"]
-
-[dependencies]
-
-[dev-dependencies]
-criterion = "0.3"
-rand = "0.8"
-
-[features]
-default = ["std"]
-std = []
-
-[[bench]]
-name = "benchmark"
-harness = false

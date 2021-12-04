@@ -11,7 +11,7 @@
 //! # assert_eq!(values[3], 1.0);
 //! ```
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
 
 use core::cmp::Ordering;
 use core::hash::{Hash, Hasher};
@@ -58,7 +58,6 @@ pub trait InPlaceTotallyOrderable: TotallyOrderable + Sized {
 	unsafe fn total_order_inverse_transform(&mut self);
 }
 
-#[cfg(feature = "std")]
 /// (Potentially) faster alternative to `TotallyOrdered::new_slice_mut` followed by
 /// `sort` for values that can be transformed in place.
 ///
