@@ -15,6 +15,7 @@
 
 use core::cmp::Ordering;
 use core::hash::{Hash, Hasher};
+use core::slice::{from_raw_parts, from_raw_parts_mut};
 
 /// Implement this for types that are not directly `Ord + Eq`, but
 /// can be at a slightly higher runtime cost. Implemented for `f32`
@@ -77,7 +78,6 @@ pub fn total_sort<E: InPlaceTotallyOrderable, T: AsMut<[E]>>(container: &mut T) 
 			}
 		}
 		{
-			use core::slice::from_raw_parts_mut;
 			let st = unsafe { from_raw_parts_mut(s.as_ptr() as *mut E::Transformed, s.len()) };
 			// as the transformed values are totally orderable, unstable == stable!
 			st.sort_unstable();
@@ -163,7 +163,6 @@ impl<F: TotallyOrderable> TotallyOrdered<F> {
 	/// assert_eq!(values_to[2], TotallyOrdered::new(3.0));
 	/// ```
 	pub fn new_slice(s: &[F]) -> &[Self] {
-		use core::slice::from_raw_parts;
 		// TotallyOrdered is repr(transparent)
 		unsafe { from_raw_parts(s.as_ptr() as *const _, s.len()) }
 	}
@@ -181,7 +180,6 @@ impl<F: TotallyOrderable> TotallyOrdered<F> {
 	/// values_to.sort();
 	/// ```
 	pub fn new_slice_mut(s: &mut [F]) -> &mut [Self] {
-		use core::slice::from_raw_parts_mut;
 		// TotallyOrdered is repr(transparent)
 		unsafe { from_raw_parts_mut(s.as_ptr() as *mut _, s.len()) }
 	}
@@ -269,11 +267,11 @@ impl<'a, F: TotallyOrderable> From<&'a mut F> for &'a mut TotallyOrdered<F> {
 
 #[cfg(test)]
 mod test {
+	use crate::TotallyOrdered;
+	use core::{f32, f64};
+
 	#[test]
 	fn test_total_order_f32() {
-		use crate::TotallyOrdered;
-		use core::f32;
-
 		let mut values = [
 			-0.0,
 			0.0,
@@ -314,9 +312,6 @@ mod test {
 
 	#[test]
 	fn test_total_order_f64() {
-		use crate::TotallyOrdered;
-		use core::f64;
-
 		let mut values = [
 			-0.0,
 			0.0,
