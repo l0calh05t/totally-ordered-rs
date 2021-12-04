@@ -7,8 +7,10 @@ cache: cargo
 before_script:
   - rustup component add clippy
   - rustup component add rustfmt
+  - rustup target add thumbv6m-none-eabi
 script:
   - cargo fmt -- --check --files-with-diff
   - cargo build
   - cargo test
   - cargo clippy
+  - cargo check --target thumbv6m-none-eabi --no-default-features
